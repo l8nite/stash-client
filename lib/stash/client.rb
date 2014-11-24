@@ -25,36 +25,59 @@ module Stash
     end
 
     def projects
-      fetch_all @url.join('projects')
+      fetch_all 'projects'
     end
 
     def create_project(opts={})
-      post @url.join('projects'), opts
+      post 'projects', opts
     end
 
     def update_project(project, opts={})
-      relative_project_path = project.fetch('link').fetch('url')
-      put @url.join(remove_leading_slash(relative_project_path)), opts
+      project_path = project.fetch('link').fetch('url')
+      put project_path, opts
     end
 
     def delete_project(project)
-      relative_project_path = project.fetch('link').fetch('url')
-      delete @url.join(remove_leading_slash(relative_project_path))
+      project_path = project.fetch('link').fetch('url')
+      delete project_path
     end
 
     def repositories
       projects.map do |project|
-        relative_project_path = project.fetch('link').fetch('url') + '/repos'
-        fetch_all @url.join(remove_leading_slash(relative_project_path))
+        repos_path = project.fetch('link').fetch('url') + '/repos'
+        fetch_all repos_path
       end.flatten
+    end
+
+    def repositories_for(project)
+      project_path = project.fetch('link').fetch('url') + '/repos'
+      repos = fetch_all project_path
+      repos.flatten
+    end
+
+    def update_repository(repository, opts={})
+      put repo_path(repository), opts
+    end
+
+    def project_keyed(key)
+      projects.find { |e| e['key'] == key }
     end
 
     def project_named(name)
       projects.find { |e| e['name'] == name }
     end
 
-    def repository_named(name)
-      repositories.find { |e| e['name'] == name }
+    def repository_named(name, project = nil)
+      if project.nil?
+        repositories.find { |e| e['name'] == name }
+      else
+        repositories_for(project).find { |e| e['name'] == name }
+      end
+    end
+
+    def default_branch_for(repository)
+      default_branch_path = repo_path(repository) + '/branches/default'
+      fetch default_branch_path
     end
 
     def commits_for(repo, opts = {})
@@ -101,6 +124,7 @@ module Stash
     private
 
     def fetch_all(uri)
+      uri = @url.join(remove_leading_slash(uri)) unless uri.kind_of? Addressable::URI
       response, result = {}, []
 
       until response['isLastPage']
@@ -115,10 +139,12 @@ module Stash
     end
 
     def fetch(uri)
+      uri = @url.join(remove_leading_slash(uri)) unless uri.kind_of? Addressable::URI
       JSON.parse(RestClient.get(uri.to_s, :accept => :json))
     end
 
     def post(uri, data)
+      uri = @url.join(remove_leading_slash(uri)) unless uri.kind_of? Addressable::URI
       JSON.parse(
         RestClient.post(
           uri.to_s, data.to_json, :accept => :json, :content_type => :json
@@ -127,6 +153,7 @@ module Stash
     end
 
     def put(uri, data)
+      uri = @url.join(remove_leading_slash(uri)) unless uri.kind_of? Addressable::URI
       JSON.parse(
         RestClient.put(
           uri.to_s, data.to_json, :accept => :json, :content_type => :json
@@ -135,6 +162,7 @@ module Stash
     end
 
     def delete(uri)
+      uri = @url.join(remove_leading_slash(uri)) unless uri.kind_of? Addressable::URI
       RestClient.delete(uri.to_s, :accept => :json)
     end
 
@@ -142,5 +170,9 @@ module Stash
       str.sub(/\A\//, '')
     end
 
+    def repo_path(repository)
+      relative_project_path = repository.fetch('project').fetch('link').fetch('url')
+      relative_project_path + '/repos/' + repository.fetch('slug')
+    end
   end
 end
