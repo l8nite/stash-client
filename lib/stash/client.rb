@@ -10,6 +10,7 @@ module Stash
     BRANCH_UTIL_API = '/rest/branch-utils/1.0/'
 
     attr_reader :url
+    attr_reader :credentials
 
     def initialize(opts = {})
       if opts[:host] && opts[:scheme]
@@ -34,8 +35,10 @@ module Stash
         raise ArgumentError, "must provide :url or :host"
       end
 
-      @url.userinfo = opts[:credentials] if opts[:credentials]
-      @burl.userinfo = opts[:credentials] if opts[:credentials]
+      @credentials = opts[:credentials] if opts[:credentials]
+
+      @url.userinfo = @credentials
+      @burl.userinfo = @credentials
     end
 
     def projects
