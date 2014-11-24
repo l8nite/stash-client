@@ -6,22 +6,36 @@ require 'json'
 module Stash
   class Client
 
+    REST_API = '/rest/api/1.0/'
+    BRANCH_UTIL_API = '/rest/branch-utils/1.0/'
+
     attr_reader :url
 
     def initialize(opts = {})
       if opts[:host] && opts[:scheme]
-        @url = Addressable::URI.parse(opts[:scheme] + '://' + opts[:host] + '/rest/api/1.0/')
+        base = Addressable::URI.parse(opts[:scheme] + '://' + opts[:host])
+        @url = base.join(REST_API)
+        @burl = base.join(BRANCH_UTIL_API)
       elsif opts[:host]
-        @url = Addressable::URI.parse('http://' + opts[:host] + '/rest/api/1.0/')
+        base = Addressable::URI.parse('http://' + opts[:host])
+        @url = base.join(REST_API)
+        @burl = base.join(BRANCH_UTIL_API)
       elsif opts[:url]
-        @url = Addressable::URI.parse(opts[:url])
+        base = Addressable::URI.parse(opts[:url])
+        @url = base.join(REST_API)
+        @burl = base.join(BRANCH_UTIL_API)
       elsif opts[:uri] && opts[:uri].kind_of?(Addressable::URI)
-        @url = opts[:uri]
+        base = opts[:uri]
+        @url = base
+        if base.path eq REST_API
+          @burl = Addressable::URI.parse(base.site + remove_leading_slash(BRANCH_UTIL_API))
+        end
       else
         raise ArgumentError, "must provide :url or :host"
       end
 
       @url.userinfo = opts[:credentials] if opts[:credentials]
+      @burl.userinfo = opts[:credentials] if opts[:credentials]
     end
 
     def projects
@@ -80,6 +94,41 @@ module Stash
       fetch default_branch_path
     end
 
+    def set_default_branch_for(repository, branch_id)
+      default_branch_path = repo_path(repository) + '/branches/default'
+      put default_branch_path, { id: branch_id}
+    end
+
+    def branches_matching(repository, filter = nil)
+      default_branch_path = repo_path(repository) + '/branches'
+      args = filter.nil? ? {} : { filterText: filter }
+      fetch_all default_branch_path, args
+    end
+
+    def create_branch(repository, branch_name, start_point)
+      branch_path = repo_path(repository) + '/branches'
+      url = @burl.join(remove_leading_slash branch_path)
+      post url, {
+        name: branch_name,
+        startPoint: start_point
+      }
+    end
+
+    def hooks_for(repository)
+      hooks_path = repo_path(repository) + '/settings/hooks'
+      fetch_all hooks_path
+    end
+
+    def hook_settings(repository, key)
+      hook_settings_path = repo_path(repository) + '/settings/hooks/' + key + '/settings'
+      fetch hook_settings_path
+    end
+
+    def hook_enable(repository, key, settings = {})
+      hook_enabled_path = repo_path(repository) + '/settings/hooks/' + key + '/enabled'
+      put hook_enabled_path, settings
+    end
+
     def commits_for(repo, opts = {})
       query_values = {}
 
@@ -123,8 +172,9 @@ module Stash
 
     private
 
-    def fetch_all(uri)
+    def fetch_all(uri, args = {})
       uri = @url.join(remove_leading_slash(uri)) unless uri.kind_of? Addressable::URI
+      uri.query_values = (uri.query_values || {}).merge(args)
       response, result = {}, []
 
       until response['isLastPage']
@@ -138,27 +188,33 @@ module Stash
       result
     end
 
-    def fetch(uri)
+    def fetch(uri, args = {})
       uri = @url.join(remove_leading_slash(uri)) unless uri.kind_of? Addressable::URI
-      JSON.parse(RestClient.get(uri.to_s, :accept => :json))
+      uri.query_values = (uri.query_values || {}).merge(args)
+
+      response = RestClient.get(uri.to_s, :accept => :json)
+
+      response.present? ? JSON.parse(response) : nil
     end
 
     def post(uri, data)
       uri = @url.join(remove_leading_slash(uri)) unless uri.kind_of? Addressable::URI
-      JSON.parse(
-        RestClient.post(
-          uri.to_s, data.to_json, :accept => :json, :content_type => :json
-        )
+
+      response = RestClient.post(
+        uri.to_s, data.to_json, :accept => :json, :content_type => :json
       )
+
+      response.present? ? JSON.parse(response) : nil
     end
 
     def put(uri, data)
       uri = @url.join(remove_leading_slash(uri)) unless uri.kind_of? Addressable::URI
-      JSON.parse(
-        RestClient.put(
-          uri.to_s, data.to_json, :accept => :json, :content_type => :json
-        )
+
+      response = RestClient.put(
+        uri.to_s, data.to_json, :accept => :json, :content_type => :json
       )
+
+      response.present? ? JSON.parse(response) : nil
     end
 
     def delete(uri)
