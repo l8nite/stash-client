@@ -132,6 +132,11 @@ module Stash
       put hook_enabled_path, settings
     end
 
+    def hook_disable(repository, key)
+      hook_enabled_path = repo_path(repository) + '/settings/hooks/' + key + '/enabled'
+      delete hook_enabled_path
+    end
+
     def commits_for(repo, opts = {})
       query_values = {}
 
