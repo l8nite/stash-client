@@ -94,7 +94,8 @@ module Stash
 
     def default_branch_for(repository)
       default_branch_path = repo_path(repository) + '/branches/default'
-      fetch default_branch_path
+      response = fetch default_branch_path
+      response['values']
     end
 
     def set_default_branch_for(repository, branch_id)
