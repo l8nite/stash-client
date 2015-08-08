@@ -94,8 +94,7 @@ module Stash
 
     def default_branch_for(repository)
       default_branch_path = repo_path(repository) + '/branches/default'
-      response = fetch default_branch_path
-      response['values']
+      fetch default_branch_path
     end
 
     def set_default_branch_for(repository, branch_id)
@@ -120,7 +119,8 @@ module Stash
 
     def files_for(repository)
       files_path = repo_path(repository) + '/files'
-      fetch files_path
+      response = fetch files_path
+      response['values']
     end
 
     def hooks_for(repository)
