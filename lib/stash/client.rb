@@ -119,8 +119,7 @@ module Stash
 
     def files_for(repository)
       files_path = repo_path(repository) + '/files'
-      response = fetch files_path
-      response['values']
+      fetch_all files_path
     end
 
     def hooks_for(repository)
