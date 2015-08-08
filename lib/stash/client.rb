@@ -117,6 +117,11 @@ module Stash
       }
     end
 
+    def files_for(repository)
+      files_path = repo_path(repository) + '/files'
+      fetch files_path
+    end
+
     def hooks_for(repository)
       hooks_path = repo_path(repository) + '/settings/hooks'
       fetch_all hooks_path
