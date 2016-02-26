@@ -183,6 +183,10 @@ module Stash
       end
     end
 
+    def create_repo(project, opts={})
+      post "projects/#{project}/repos", opts
+    end
+
     private
 
     def fetch_all(uri, args = {})
