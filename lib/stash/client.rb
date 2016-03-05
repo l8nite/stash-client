@@ -50,24 +50,24 @@ module Stash
     end
 
     def update_project(project, opts={})
-      project_path = project.fetch('link').fetch('url')
+      project_path = project.fetch('links').fetch('self').first['href']
       put project_path, opts
     end
 
     def delete_project(project)
-      project_path = project.fetch('link').fetch('url')
+      project_path = project.fetch('links').fetch('self').first['href']
       delete project_path
     end
 
     def repositories
       projects.map do |project|
-        repos_path = project.fetch('link').fetch('url') + '/repos'
+        repos_path = project.fetch('links').fetch('self').first['href'] + '/repos'
         fetch_all repos_path
       end.flatten
     end
 
     def repositories_for(project)
-      project_path = project.fetch('link').fetch('url') + '/repos'
+      project_path = project.fetch('links').fetch('self').first['href'] + '/repos'
       repos = fetch_all project_path
       repos.flatten
     end
@@ -145,7 +145,7 @@ module Stash
     def commits_for(repo, opts = {})
       query_values = {}
 
-      path = remove_leading_slash repo.fetch('link').fetch('url').sub('browse', 'commits')
+      path = remove_leading_slash repo.fetch('links').fetch('self').first['href'].sub('browse', 'commits')
       uri = @url.join(path)
 
       query_values['since'] = opts[:since] if opts[:since]
@@ -167,7 +167,7 @@ module Stash
     end
 
     def changes_for(repo, sha, opts = {})
-      path = remove_leading_slash repo.fetch('link').fetch('url').sub('browse', 'changes')
+      path = remove_leading_slash repo.fetch('links').fetch('self').first['href'].sub('browse', 'changes')
       uri = @url.join(path)
 
       query_values = { 'until' =>  sha }
@@ -244,7 +244,7 @@ module Stash
     end
 
     def repo_path(repository)
-      relative_project_path = repository.fetch('project').fetch('link').fetch('url')
+      relative_project_path = repository.fetch('project').fetch('links').fetch('self').first['href']
       relative_project_path + '/repos/' + repository.fetch('slug')
     end
   end
