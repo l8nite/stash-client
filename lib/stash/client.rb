@@ -50,12 +50,12 @@ module Stash
     end
 
     def update_project(project, opts={})
-      project_path = project.fetch('links').fetch('self').first['href']
+      project_path = get_project_path(project)
       put project_path, opts
     end
 
     def delete_project(project)
-      project_path = project.fetch('links').fetch('self').first['href']
+      project_path = get_project_path(project)
       delete project_path
     end
 
@@ -67,7 +67,7 @@ module Stash
     end
 
     def repositories_for(project)
-      project_path = project.fetch('links').fetch('self').first['href'] + '/repos'
+      project_path = get_project_path(project) + '/repos'
       repos = fetch_all project_path
       repos.flatten
     end
@@ -241,6 +241,10 @@ module Stash
 
     def remove_leading_slash(str)
       str.sub(/\A\//, '')
+    end
+    
+    def get_project_path(project)
+      "projects/#{project.fetch('key')}"
     end
 
     def repo_path(repository)
