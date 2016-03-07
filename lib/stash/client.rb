@@ -248,7 +248,7 @@ module Stash
     end
 
     def repo_path(repository)
-      relative_project_path = repository.fetch('project').fetch('key')
+      relative_project_path = 'projects/' + repository.fetch('project').fetch('key')
       relative_project_path + '/repos/' + repository.fetch('slug')
     end
   end
