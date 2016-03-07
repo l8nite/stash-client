@@ -187,10 +187,6 @@ module Stash
       post "projects/#{project}/repos", opts
     end
 
-    def get_project_path(project)
-      "projects/#{project.fetch('key')}"
-    end
-
     private
 
     def fetch_all(uri, args = {})
@@ -245,6 +241,10 @@ module Stash
 
     def remove_leading_slash(str)
       str.sub(/\A\//, '')
+    end
+    
+    def get_project_path(project)
+      "projects/#{project.fetch('key')}"
     end
 
     def repo_path(repository)
