@@ -61,7 +61,7 @@ module Stash
 
     def repositories
       projects.map do |project|
-        repos_path = project.fetch('links').fetch('self').first['href'] + '/repos'
+        repos_path = get_project_path(project) + '/repos'
         fetch_all repos_path
       end.flatten
     end
@@ -145,7 +145,7 @@ module Stash
     def commits_for(repo, opts = {})
       query_values = {}
 
-      path = remove_leading_slash repo.fetch('links').fetch('self').first['href'].sub('browse', 'commits')
+      path = remove_leading_slash repo_path(repo).sub('browse', 'commits')
       uri = @url.join(path)
 
       query_values['since'] = opts[:since] if opts[:since]
@@ -167,7 +167,7 @@ module Stash
     end
 
     def changes_for(repo, sha, opts = {})
-      path = remove_leading_slash repo.fetch('links').fetch('self').first['href'].sub('browse', 'changes')
+      path = remove_leading_slash repo_path(repo).sub('browse', 'changes')
       uri = @url.join(path)
 
       query_values = { 'until' =>  sha }
@@ -242,13 +242,13 @@ module Stash
     def remove_leading_slash(str)
       str.sub(/\A\//, '')
     end
-    
+
     def get_project_path(project)
       "projects/#{project.fetch('key')}"
     end
 
     def repo_path(repository)
-      relative_project_path = repository.fetch('project').fetch('links').fetch('self').first['href']
+      relative_project_path = repository.fetch('project').fetch('key')
       relative_project_path + '/repos/' + repository.fetch('slug')
     end
   end
